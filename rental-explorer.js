@@ -1,139 +1,743 @@
 
-/* Nads' Rental Explorer: public listings only; approximate locations and distances. */
-let rentals=[], rentalMap=null, rentalLayer=null, rentalAmenityCache={};
-const $r=id=>document.getElementById(id);
-const esc=t=>String(t??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-const km=(a,b)=>{const r=Math.PI/180,dlat=(b.lat-a.lat)*r,dlon=(b.lon-a.lon)*r,q=Math.sin(dlat/2)**2+Math.cos(a.lat*r)*Math.cos(b.lat*r)*Math.sin(dlon/2)**2;return 12742*Math.asin(Math.sqrt(q))};
-const dist=(a,b)=>(km(a,b)<1?Math.round(km(a,b)*1000)+' m':km(a,b).toFixed(2)+' km');
 
-async function loadRentals(){
-  try{
-    const r=await fetch('./rentals.json?'+Date.now(),{cache:'no-store'});
-    if(!r.ok)throw Error('Listings file not published');
-    const obj=await r.json();
-    rentals=(obj.properties||[]).filter(x=>x.url&&x.title);
-    $r('rentalStatus').textContent=rentals.length+' advertised rental listings in latest snapshot · Updated '+(obj.updated||'unknown')+(obj.notice?' · '+obj.notice:'');
-    const opts='<option value="">Select a property…</option>'+rentals.map((x,i)=>'<option value="'+i+'">'+esc(x.title)+' · '+esc(x.price||'Price on enquiry')+'</option>').join('');
-    $r('rentalSelect').innerHTML=opts;
-    $r('compareRental').innerHTML=opts;
-    if(!rentals.length)$r('rentalStatus').textContent='No listings in the latest snapshot. Visit the company website to check availability.';
-  }catch(e){
-    $r('rentalStatus').textContent='Automatic listings are not published yet. Add rentals.json and the updater workflow to GitHub, then run the workflow.';
-    $r('rentalSelect').innerHTML='<option value="">No data yet</option>';
+/* Nads' Rental Explorer */
+
+let rentals = [];
+
+let rentalMap = null;
+
+let rentalLayer = null;
+
+let rentalAmenityCache = {};
+
+let rentalRequest = 0;
+
+const $r = id => document.getElementById(id);
+
+const esc = value => String(value ?? '').replace(
+
+  /[&<>"']/g,
+
+  c => ({
+
+    '&': '&amp;',
+
+    '<': '&lt;',
+
+    '>': '&gt;',
+
+    '"': '&quot;',
+
+    "'": '&#39;'
+
+  }[c])
+
+);
+
+function km(a, b) {
+
+  const r = Math.PI / 180;
+
+  const dlat = (b.lat - a.lat) * r;
+
+  const dlon = (b.lon - a.lon) * r;
+
+  const q = Math.sin(dlat / 2) ** 2 +
+
+    Math.cos(a.lat * r) * Math.cos(b.lat * r) *
+
+    Math.sin(dlon / 2) ** 2;
+
+  return 12742 * Math.asin(Math.sqrt(q));
+
+}
+
+function dist(a, b) {
+
+  const d = km(a, b);
+
+  return d < 1
+
+    ? Math.round(d * 1000) + ' m'
+
+    : d.toFixed(2) + ' km';
+
+}
+
+async function loadRentals() {
+
+  try {
+
+    const response = await fetch(
+
+      './rentals.json?' + Date.now(),
+
+      { cache: 'no-store' }
+
+    );
+
+    if (!response.ok) throw Error('Listings unavailable');
+
+    const data = await response.json();
+
+    rentals = (data.properties || []).filter(
+
+      x => x.url && x.title
+
+    );
+
+    $r('rentalStatus').textContent =
+
+      rentals.length + ' advertised rental listings · Updated ' +
+
+      (data.updated || 'unknown') +
+
+      (data.notice ? ' · ' + data.notice : '');
+
+    const options =
+
+      '<option value="">Select a property…</option>' +
+
+      rentals.map((x, i) =>
+
+        '<option value="' + i + '">' +
+
+        esc(x.title) + ' · ' +
+
+        esc(x.price || 'Price on enquiry') +
+
+        '</option>'
+
+      ).join('');
+
+    $r('rentalSelect').innerHTML = options;
+
+    $r('compareRental').innerHTML = options;
+
+    if (!rentals.length) {
+
+      $r('rentalStatus').textContent =
+
+        'No current listings in the snapshot.';
+
+    }
+
+  } catch (error) {
+
+    $r('rentalStatus').textContent =
+
+      'Rental listings are currently unavailable.';
+
+    $r('rentalSelect').innerHTML =
+
+      '<option value="">No data available</option>';
+
   }
+
 }
 
-async function geocode(address){
-  const u='https://nominatim.openstreetmap.org/search?format=json&limit=1&countrycodes=gb&q='+encodeURIComponent(address);
-  const r=await fetch(u);
-  if(!r.ok)throw Error('Geocoding unavailable');
-  const a=await r.json();
-  if(!a.length)throw Error('Location not found');
-  return {lat:+a[0].lat,lon:+a[0].lon};
+async function geocode(address) {
+
+  const url =
+
+    'https://nominatim.openstreetmap.org/search' +
+
+    '?format=json&limit=1&countrycodes=gb&q=' +
+
+    encodeURIComponent(address);
+
+  const response = await fetch(url);
+
+  if (!response.ok) throw Error('Location service unavailable');
+
+  const results = await response.json();
+
+  if (!results.length) throw Error('Location not found');
+
+  return {
+
+    lat: Number(results[0].lat),
+
+    lon: Number(results[0].lon)
+
+  };
+
 }
 
-async function rentalLocation(x){
-  if(x.lat&&x.lon)return {lat:+x.lat,lon:+x.lon};
-  if(x._pos)return x._pos;
-  x._pos=await geocode(x.location||x.title+', Kent, UK');
-  return x._pos;
-}
+async function rentalLocation(property) {
 
-function ensureRentalMap(pos){
-  if(!window.L)throw Error('Map library could not load. Check your internet connection.');
-  if(!rentalMap){
-    rentalMap=L.map('rentalMap').setView([pos.lat,pos.lon],14);
-    L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png',{
-      maxZoom:19,
-      attribution:'© OpenStreetMap contributors'
-    }).addTo(rentalMap);
-    rentalLayer=L.layerGroup().addTo(rentalMap);
+  if (property.lat && property.lon) {
+
+    return {
+
+      lat: Number(property.lat),
+
+      lon: Number(property.lon)
+
+    };
+
   }
+
+  if (property._pos) return property._pos;
+
+  property._pos = await geocode(
+
+    property.location || property.title + ', Kent, UK'
+
+  );
+
+  return property._pos;
+
+}
+
+function ensureRentalMap(pos) {
+
+  if (!window.L) {
+
+    throw Error('Map library unavailable');
+
+  }
+
+  const container = $r('rentalMap');
+
+  if (!rentalMap) {
+
+    // Remove the original placeholder completely.
+
+    container.replaceChildren();
+
+    container.style.position = 'relative';
+
+    container.style.display = 'block';
+
+    container.style.width = '100%';
+
+    container.style.height = '320px';
+
+    container.style.overflow = 'hidden';
+
+    // Keep map images under Leaflet's own positioning rules.
+
+    if (!document.getElementById('rentalMapFix')) {
+
+      const style = document.createElement('style');
+
+      style.id = 'rentalMapFix';
+
+      style.textContent = `
+
+        #rentalMap {
+
+          position: relative !important;
+
+          height: 320px !important;
+
+          min-height: 320px !important;
+
+          overflow: hidden !important;
+
+        }
+
+        #rentalMap .leaflet-pane,
+
+        #rentalMap .leaflet-map-pane,
+
+        #rentalMap .leaflet-tile-pane {
+
+          position: absolute;
+
+        }
+
+        #rentalMap .leaflet-tile {
+
+          position: absolute;
+
+          max-width: none !important;
+
+          max-height: none !important;
+
+          width: 256px;
+
+          height: 256px;
+
+        }
+
+        #rentalMap .leaflet-marker-icon,
+
+        #rentalMap .leaflet-marker-shadow {
+
+          position: absolute;
+
+          max-width: none !important;
+
+        }
+
+      `;
+
+      document.head.appendChild(style);
+
+    }
+
+    rentalMap = L.map(container, {
+
+      zoomControl: true,
+
+      scrollWheelZoom: false
+
+    });
+
+    L.tileLayer(
+
+      'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+
+      {
+
+        maxZoom: 19,
+
+        attribution: '© OpenStreetMap contributors'
+
+      }
+
+    ).addTo(rentalMap);
+
+    rentalLayer = L.layerGroup().addTo(rentalMap);
+
+  }
+
   rentalLayer.clearLayers();
-  rentalMap.setView([pos.lat,pos.lon],14);
-  L.marker([pos.lat,pos.lon]).addTo(rentalLayer).bindPopup('Approximate rental location').openPopup();
-  setTimeout(()=>rentalMap.invalidateSize(),100);
+
+  rentalMap.setView([pos.lat, pos.lon], 14, {
+
+    animate: false
+
+  });
+
+  L.marker([pos.lat, pos.lon])
+
+    .addTo(rentalLayer)
+
+    .bindPopup('Approximate rental location');
+
+  // Recalculate map dimensions after layout settles.
+
+  requestAnimationFrame(() => {
+
+    rentalMap.invalidateSize({
+
+      pan: false,
+
+      animate: false
+
+    });
+
+  });
+
+  setTimeout(() => {
+
+    rentalMap.invalidateSize({
+
+      pan: false,
+
+      animate: false
+
+    });
+
+  }, 500);
+
 }
 
-async function rentalSelected(){
-  const x=rentals[+$r('rentalSelect').value];
-  if(!x)return;
-  $r('rentalDetails').innerHTML='<strong>'+esc(x.title)+'</strong> · '+esc(x.price||'Price on enquiry')+'<br><a href="'+esc(x.url)+'" target="_blank" rel="noopener noreferrer">View original listing ↗</a><p class="note">'+esc(x.location||'Approximate area')+'</p>';
-  $r('rentalNearby').textContent='Finding location…';
-  try{
-    const pos=await rentalLocation(x);
+async function rentalSelected() {
+
+  const selected = $r('rentalSelect').value;
+
+  if (selected === '') return;
+
+  const property = rentals[Number(selected)];
+
+  if (!property) return;
+
+  const request = ++rentalRequest;
+
+  $r('rentalDetails').innerHTML =
+
+    '<strong>' + esc(property.title) + '</strong> · ' +
+
+    esc(property.price || 'Price on enquiry') +
+
+    '<br><a href="' + esc(property.url) +
+
+    '" target="_blank" rel="noopener noreferrer">' +
+
+    'View original listing ↗</a>' +
+
+    '<p class="note">' +
+
+    esc(property.location || 'Approximate area') +
+
+    '</p>';
+
+  $r('rentalNearby').textContent = 'Finding location…';
+
+  try {
+
+    const pos = await rentalLocation(property);
+
+    if (request !== rentalRequest) return;
+
     ensureRentalMap(pos);
+
     await loadRentalAmenities();
-  }catch(e){
-    $r('rentalNearby').textContent='Map location unavailable: '+e.message+' · Use the original listing link instead.';
+
+  } catch (error) {
+
+    $r('rentalNearby').textContent =
+
+      'Location unavailable: ' + error.message;
+
   }
+
 }
 
-async function loadRentalAmenities(){
-  const x=rentals[+$r('rentalSelect').value];
-  if(!x)return;
-  const kind=$r('rentalAmenity').value;
-  const el=$r('rentalNearby');
-  el.textContent='Searching nearby landmarks…';
-  try{
-    const pos=await rentalLocation(x);
-    ensureRentalMap(pos);
-    const key=pos.lat.toFixed(4)+','+pos.lon.toFixed(4)+':'+kind;
-    let places=rentalAmenityCache[key];
-    if(!places){
-      const filters={
-        station:'["railway"="station"]',
-        school:'["amenity"="school"]',
-        supermarket:'["shop"="supermarket"]',
-        park:'["leisure"="park"]'
+async function fetchLandmarks(query) {
+
+  const servers = [
+
+    'https://overpass.kumi.systems/api/interpreter',
+
+    'https://overpass.private.coffee/api/interpreter'
+
+  ];
+
+  let lastError;
+
+  for (const server of servers) {
+
+    try {
+
+      const controller = new AbortController();
+
+      const timeout = setTimeout(
+
+        () => controller.abort(),
+
+        12000
+
+      );
+
+      try {
+
+        const response = await fetch(server, {
+
+          method: 'POST',
+
+          body: new URLSearchParams({ data: query }),
+
+          signal: controller.signal
+
+        });
+
+        if (!response.ok) {
+
+          throw Error('Landmark server busy');
+
+        }
+
+        return await response.json();
+
+      } finally {
+
+        clearTimeout(timeout);
+
+      }
+
+    } catch (error) {
+
+      lastError = error;
+
+    }
+
+  }
+
+  throw lastError || Error('Landmark services unavailable');
+
+}
+
+async function loadRentalAmenities() {
+
+  const selected = $r('rentalSelect').value;
+
+  if (selected === '') return;
+
+  const property = rentals[Number(selected)];
+
+  if (!property) return;
+
+  const kind = $r('rentalAmenity').value;
+
+  const output = $r('rentalNearby');
+
+  output.textContent = 'Searching nearby landmarks…';
+
+  try {
+
+    const pos = await rentalLocation(property);
+
+    // Only create the map if it does not already exist.
+
+    if (!rentalMap) ensureRentalMap(pos);
+
+    const key =
+
+      pos.lat.toFixed(4) + ',' +
+
+      pos.lon.toFixed(4) + ':' + kind;
+
+    let places = rentalAmenityCache[key];
+
+    if (!places) {
+
+      const filters = {
+
+        station: '["railway"="station"]',
+
+        school: '["amenity"="school"]',
+
+        supermarket: '["shop"="supermarket"]',
+
+        park: '["leisure"="park"]'
+
       };
-      const q='[out:json][timeout:20];(node(around:4000,'+pos.lat+','+pos.lon+')'+filters[kind]+';way(around:4000,'+pos.lat+','+pos.lon+')'+filters[kind]+';);out center 35;';
-      const r=await fetch('https://overpass.kumi.systems/api/interpreter?data='+encodeURIComponent(q));
-      if(!r.ok)throw Error('Landmark service temporarily busy');
-      const data=await r.json();
-      places=(data.elements||[]).map(z=>({
-        name:z.tags?.name||'Unnamed '+kind,
-        lat:z.lat??z.center?.lat,
-        lon:z.lon??z.center?.lon
-      })).filter(z=>z.lat&&z.lon).sort((a,b)=>km(pos,a)-km(pos,b)).slice(0,12);
-      rentalAmenityCache[key]=places;
+
+      if (!filters[kind]) {
+
+        throw Error('Unknown landmark category');
+
+      }
+
+      const query =
+
+        '[out:json][timeout:20];(' +
+
+        'node(around:4000,' +
+
+        pos.lat + ',' + pos.lon + ')' +
+
+        filters[kind] + ';' +
+
+        'way(around:4000,' +
+
+        pos.lat + ',' + pos.lon + ')' +
+
+        filters[kind] + ';' +
+
+        ');out center 35;';
+
+      const data = await fetchLandmarks(query);
+
+      places = (data.elements || [])
+
+        .map(item => ({
+
+          name: item.tags?.name || 'Unnamed ' + kind,
+
+          lat: item.lat ?? item.center?.lat,
+
+          lon: item.lon ?? item.center?.lon
+
+        }))
+
+        .filter(item =>
+
+          Number.isFinite(item.lat) &&
+
+          Number.isFinite(item.lon)
+
+        )
+
+        .sort((a, b) => km(pos, a) - km(pos, b))
+
+        .slice(0, 12);
+
+      rentalAmenityCache[key] = places;
+
     }
-    if(!places.length){
-      el.textContent='No nearby '+kind+' locations found in OpenStreetMap.';
+
+    // Keep the property marker, remove older amenity markers.
+
+    rentalLayer.clearLayers();
+
+    L.marker([pos.lat, pos.lon])
+
+      .addTo(rentalLayer)
+
+      .bindPopup('Approximate rental location');
+
+    if (!places.length) {
+
+      output.textContent =
+
+        'No nearby ' + kind +
+
+        ' locations found in OpenStreetMap.';
+
       return;
+
     }
-    el.innerHTML=places.map(z=>'<div class="rental-item"><strong>'+esc(z.name)+'</strong> · '+dist(pos,z)+' straight line <a target="_blank" rel="noopener noreferrer" href="https://www.google.com/maps/dir/?api=1&origin='+encodeURIComponent(pos.lat+','+pos.lon)+'&destination='+encodeURIComponent(z.lat+','+z.lon)+'&travelmode=walking">Walking route ↗</a></div>').join('');
-    places.forEach(z=>L.circleMarker([z.lat,z.lon],{
-      radius:7,
-      color:'#b88746',
-      fillColor:'#eabf82',
-      fillOpacity:.85
-    }).addTo(rentalLayer).bindPopup(esc(z.name)+' · '+dist(pos,z)));
-  }catch(e){
-    el.textContent='Nearby search unavailable at present: '+e.message+'. Please try again later.';
+
+    output.innerHTML = places.map(place => {
+
+      const directions =
+
+        'https://www.google.com/maps/dir/?api=1' +
+
+        '&origin=' +
+
+        encodeURIComponent(pos.lat + ',' + pos.lon) +
+
+        '&destination=' +
+
+        encodeURIComponent(place.lat + ',' + place.lon) +
+
+        '&travelmode=walking';
+
+      return '<div class="rental-item">' +
+
+        '<strong>' + esc(place.name) + '</strong> · ' +
+
+        dist(pos, place) +
+
+        ' straight line ' +
+
+        '<a href="' + directions +
+
+        '" target="_blank" rel="noopener noreferrer">' +
+
+        'Walking route ↗</a></div>';
+
+    }).join('');
+
+    places.forEach(place => {
+
+      L.circleMarker([place.lat, place.lon], {
+
+        radius: 8,
+
+        color: '#b88746',
+
+        weight: 3,
+
+        fillColor: '#eabf82',
+
+        fillOpacity: 0.95
+
+      })
+
+        .addTo(rentalLayer)
+
+        .bindPopup(
+
+          esc(place.name) + ' · ' + dist(pos, place)
+
+        );
+
+    });
+
+    rentalMap.invalidateSize({
+
+      pan: false,
+
+      animate: false
+
+    });
+
+  } catch (error) {
+
+    output.textContent =
+
+      'Nearby search unavailable: ' +
+
+      error.message +
+
+      '. Please try again later.';
+
   }
+
 }
 
-async function compareRentals(){
-  const a=rentals[+$r('rentalSelect').value],
-        b=rentals[+$r('compareRental').value],
-        q=$r('comparePlace').value.trim(),
-        out=$r('compareResult');
-  if(!a||!b||!q){
-    out.textContent='Choose two rentals and enter a landmark.';
+async function compareRentals() {
+
+  const firstIndex = $r('rentalSelect').value;
+
+  const secondIndex = $r('compareRental').value;
+
+  const query = $r('comparePlace').value.trim();
+
+  const output = $r('compareResult');
+
+  if (
+
+    firstIndex === '' ||
+
+    secondIndex === '' ||
+
+    !query
+
+  ) {
+
+    output.textContent =
+
+      'Choose two rentals and enter a landmark.';
+
     return;
+
   }
-  out.textContent='Comparing…';
-  try{
-    const [pa,pb,place]=await Promise.all([
-      rentalLocation(a),
-      rentalLocation(b),
-      geocode(q+', Kent, UK')
+
+  const first = rentals[Number(firstIndex)];
+
+  const second = rentals[Number(secondIndex)];
+
+  output.textContent = 'Comparing…';
+
+  try {
+
+    const [a, b, landmark] = await Promise.all([
+
+      rentalLocation(first),
+
+      rentalLocation(second),
+
+      geocode(query + ', Kent, UK')
+
     ]);
-    out.innerHTML='<div class="rental-item">'+esc(a.title)+': <strong>'+dist(pa,place)+'</strong></div><div class="rental-item">'+esc(b.title)+': <strong>'+dist(pb,place)+'</strong></div><p class="note">Straight-line estimates only; positions may be approximate.</p>';
-  }catch(e){
-    out.textContent='Comparison unavailable: '+e.message;
+
+    output.innerHTML =
+
+      '<div class="rental-item">' +
+
+      esc(first.title) + ': <strong>' +
+
+      dist(a, landmark) + '</strong></div>' +
+
+      '<div class="rental-item">' +
+
+      esc(second.title) + ': <strong>' +
+
+      dist(b, landmark) + '</strong></div>' +
+
+      '<p class="note">' +
+
+      'Straight-line estimates only; locations may be approximate.' +
+
+      '</p>';
+
+  } catch (error) {
+
+    output.textContent =
+
+      'Comparison unavailable: ' + error.message;
+
   }
+
 }
 
 loadRentals();
