@@ -1,15 +1,261 @@
-/* Nads' Rental Explorer: public listings only; approximate locations and distances. */
-let rentals=[], rentalMap=null, rentalLayer=null, rentalAmenityCache={};
-const $r=id=>document.getElementById(id);
-const esc=t=>String(t??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-const km=(a,b)=>{const r=Math.PI/180,dlat=(b.lat-a.lat)*r,dlon=(b.lon-a.lon)*r,q=Math.sin(dlat/2)**2+Math.cos(a.lat*r)*Math.cos(b.lat*r)*Math.sin(dlon/2)**2;return 12742*Math.asin(Math.sqrt(q))};
-const dist=(a,b)=>(km(a,b)<1?Math.round(km(a,b)*1000)+' m':km(a,b).toFixed(2)+' km');
-async function loadRentals(){try{const r=await fetch('./rentals.json?'+Date.now(),{cache:'no-store'});if(!r.ok)throw Error('Listings file not published');const obj=await r.json();rentals=(obj.properties||[]).filter(x=>x.url&&x.title);$r('rentalStatus').textContent=rentals.length+' advertised rental listings in latest snapshot · Updated '+(obj.updated||'unknown')+(obj.notice?' · '+obj.notice:'');const opts='<option value="">Select a property…</option>'+rentals.map((x,i)=>'<option value="'+i+'">'+esc(x.title)+' · '+esc(x.price||'Price on enquiry')+'</option>').join('');$r('rentalSelect').innerHTML=opts;$r('compareRental').innerHTML=opts;if(!rentals.length)$r('rentalStatus').textContent='No listings in the latest snapshot. Visit the company website to check availability.';}catch(e){$r('rentalStatus').textContent='Automatic listings are not published yet. Add rentals.json and the updater workflow to GitHub, then run the workflow.';$r('rentalSelect').innerHTML='<option value="">No data yet</option>';}}
-async function geocode(address){const u='https://nominatim.openstreetmap.org/search?format=json&limit=1&countrycodes=gb&q='+encodeURIComponent(address);const r=await fetch(u);if(!r.ok)throw Error('Geocoding unavailable');const a=await r.json();if(!a.length)throw Error('Location not found');return {lat:+a[0].lat,lon:+a[0].lon};}
-async function rentalLocation(x){if(x.lat&&x.lon)return {lat:+x.lat,lon:+x.lon};if(x._pos)return x._pos;x._pos=await geocode(x.location||x.title+', Kent, UK');return x._pos;}
-function ensureRentalMap(pos){if(!window.L)throw Error('Map library could not load. Check your internet connection.');if(!rentalMap){rentalMap=L.map('rentalMap').setView([pos.lat,pos.lon],14);L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:19,attribution:'© OpenStreetMap contributors'}).addTo(rentalMap);rentalLayer=L.layerGroup().addTo(rentalMap);}rentalLayer.clearLayers();rentalMap.setView([pos.lat,pos.lon],14);L.marker([pos.lat,pos.lon]).addTo(rentalLayer).bindPopup('Approximate rental location').openPopup();setTimeout(()=>rentalMap.invalidateSize(),100);}
-async function rentalSelected(){const x=rentals[+$r('rentalSelect').value];if(!x)return;$r('rentalDetails').innerHTML='<strong>'+esc(x.title)+'</strong> · '+esc(x.price||'Price on enquiry')+'<br><a href="'+esc(x.url)+'" target="_blank" rel="noopener noreferrer">View original listing ↗</a><p class="note">'+esc(x.location||'Approximate area')+'</p>';$r('rentalNearby').textContent='Finding location…';try{const pos=await rentalLocation(x);ensureRentalMap(pos);await loadRentalAmenities()}catch(e){$r('rentalNearby').textContent='Map location unavailable: '+e.message+' · Use the original listing link instead.';}}
-async function loadRentalAmenities(){const x=rentals[+$r('rentalSelect').value];if(!x)return;const kind=$r('rentalAmenity').value;const el=$r('rentalNearby');el.textContent='Searching nearby landmarks…';try{const pos=await rentalLocation(x);ensureRentalMap(pos);const key=pos.lat.toFixed(4)+','+pos.lon.toFixed(4)+':'+kind;let places=rentalAmenityCache[key];if(!places){const filters={station:'["railway"="station"]',school:'["amenity"="school"]',supermarket:'["shop"="supermarket"]',park:'["leisure"="park"]'};const q='[out:json][timeout:20];(node(around:4000,'+pos.lat+','+pos.lon+')'+filters[kind]+';way(around:4000,'+pos.lat+','+pos.lon+')'+filters[kind]+';);out center 35;';const r=await fetch('https://overpass.kumi.systems/api/interpreter?data='+encodeURIComponent(q));if(!r.ok)throw Error('Landmark service temporarily busy');const data=await r.json();places=(data.elements||[]).map(z=>({name:z.tags?.name||'Unnamed '+kind,lat:z.lat??z.center?.lat,lon:z.lon??z.center?.lon})).filter(z=>z.lat&&z.lon).sort((a,b)=>km(pos,a)-km(pos,b)).slice(0,12);rentalAmenityCache[key]=places;}
-if(!places.length){el.textContent='No nearby '+kind+' locations found in OpenStreetMap.';return;}el.innerHTML=places.map(z=>'<div class="rental-item"><strong>'+esc(z.name)+'</strong> · '+dist(pos,z)+' straight line <a target="_blank" rel="noopener noreferrer" href="https://www.google.com/maps/dir/?api=1&origin='+encodeURIComponent(pos.lat+','+pos.lon)+'&destination='+encodeURIComponent(z.lat+','+z.lon)+'&travelmode=walking">Walking route ↗</a></div>').join('');places.forEach(z=>L.circleMarker([z.lat,z.lon],{radius:7,color:'#b88746',fillColor:'#eabf82',fillOpacity:.85}).addTo(rentalLayer).bindPopup(esc(z.name)+' · '+dist(pos,z)));}catch(e){el.textContent='Nearby search unavailable at present: '+e.message+'. Please try again later.';}}
-async function compareRentals(){const a=rentals[+$r('rentalSelect').value],b=rentals[+$r('compareRental').value],q=$r('comparePlace').value.trim(),out=$r('compareResult');if(!a||!b||!q){out.textContent='Choose two rentals and enter a landmark.';return;}out.textContent='Comparing…';try{const [pa,pb,place]=await Promise.all([rentalLocation(a),rentalLocation(b),geocode(q+', Kent, UK')]);out.innerHTML='<div class="rental-item">'+esc(a.title)+': <strong>'+dist(pa,place)+'</strong></div><div class="rental-item">'+esc(b.title)+': <strong>'+dist(pb,place)+'</strong></div><p class="note">Straight-line estimates only; positions may be approximate.</p>';}catch(e){out.textContent='Comparison unavailable: '+e.message;}}
-loadRentals();
+/* Nads' Rental Explorer
+   Public rental listings, approximate locations and nearby amenities.
+*/
+
+let rentals = [];
+let rentalMap = null;
+let rentalLayer = null;
+let rentalAmenityCache = {};
+let rentalSearchId = 0;
+
+const $r = id => document.getElementById(id);
+
+const esc = text => String(text ?? '').replace(
+  /[&<>"']/g,
+  c => ({
+    '&': '&amp;',
+    '<': '&lt;',
+    '>': '&gt;',
+    '"': '&quot;',
+    "'": '&#39;'
+  }[c])
+);
+
+function km(a, b) {
+  const rad = Math.PI / 180;
+  const dLat = (b.lat - a.lat) * rad;
+  const dLon = (b.lon - a.lon) * rad;
+
+  const q =
+    Math.sin(dLat / 2) ** 2 +
+    Math.cos(a.lat * rad) *
+    Math.cos(b.lat * rad) *
+    Math.sin(dLon / 2) ** 2;
+
+  return 12742 * Math.asin(Math.sqrt(q));
+}
+
+function dist(a, b) {
+  const distance = km(a, b);
+
+  return distance < 1
+    ? Math.round(distance * 1000) + ' m'
+    : distance.toFixed(2) + ' km';
+}
+
+/* Prevent external services hanging indefinitely */
+
+async function fetchWithTimeout(url, milliseconds = 12000) {
+  const controller = new AbortController();
+
+  const timer = setTimeout(
+    () => controller.abort(),
+    milliseconds
+  );
+
+  try {
+    const response = await fetch(url, {
+      signal: controller.signal,
+      cache: 'no-store'
+    });
+
+    if (!response.ok) {
+      throw new Error('Server returned ' + response.status);
+    }
+
+    return await response.json();
+
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
+/* Load rental properties */
+
+async function loadRentals() {
+  try {
+    const response = await fetch(
+      './rentals.json?' + Date.now(),
+      { cache: 'no-store' }
+    );
+
+    if (!response.ok) {
+      throw new Error('Rental listings unavailable');
+    }
+
+    const data = await response.json();
+
+    rentals = (data.properties || []).filter(
+      property => property.url && property.title
+    );
+
+    $r('rentalStatus').textContent =
+      rentals.length +
+      ' advertised rental listings in latest snapshot' +
+      ' · Updated ' +
+      (data.updated || 'unknown') +
+      (data.notice ? ' · ' + data.notice : '');
+
+    const options =
+      '<option value="">Select a property…</option>' +
+      rentals.map((property, index) =>
+        '<option value="' + index + '">' +
+        esc(property.title) +
+        ' · ' +
+        esc(property.price || 'Price on enquiry') +
+        '</option>'
+      ).join('');
+
+    $r('rentalSelect').innerHTML = options;
+    $r('compareRental').innerHTML = options;
+
+    if (!rentals.length) {
+      $r('rentalStatus').textContent =
+        'No current rental listings available.';
+    }
+
+  } catch (error) {
+    $r('rentalStatus').textContent =
+      'Unable to load rental listings: ' + error.message;
+  }
+}
+
+/* Find approximate property coordinates */
+
+async function geocode(address) {
+  const url =
+    'https://nominatim.openstreetmap.org/search' +
+    '?format=json&limit=1&countrycodes=gb&q=' +
+    encodeURIComponent(address);
+
+  const results = await fetchWithTimeout(url, 12000);
+
+  if (!results.length) {
+    throw new Error('Location not found');
+  }
+
+  return {
+    lat: Number(results[0].lat),
+    lon: Number(results[0].lon)
+  };
+}
+
+async function rentalLocation(property) {
+  if (property.lat != null && property.lon != null) {
+    return {
+      lat: Number(property.lat),
+      lon: Number(property.lon)
+    };
+  }
+
+  if (property._pos) {
+    return property._pos;
+  }
+
+  const address =
+    property.location ||
+    property.address ||
+    property.title + ', Kent, UK';
+
+  property._pos = await geocode(address);
+
+  return property._pos;
+}
+
+/* Create and resize map */
+
+function ensureRentalMap(position) {
+  if (!window.L) {
+    throw new Error('Map library unavailable');
+  }
+
+  if (!rentalMap) {
+    rentalMap = L.map('rentalMap', {
+      zoomControl: true
+    }).setView(
+      [position.lat, position.lon],
+      14
+    );
+
+    L.tileLayer(
+      'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+      {
+        maxZoom: 19,
+        attribution: '© OpenStreetMap contributors'
+      }
+    ).addTo(rentalMap);
+
+    rentalLayer = L.layerGroup().addTo(rentalMap);
+  }
+
+  rentalLayer.clearLayers();
+
+  rentalMap.setView(
+    [position.lat, position.lon],
+    14
+  );
+
+  /* Prominent property marker */
+
+  L.circleMarker(
+    [position.lat, position.lon],
+    {
+      radius: 11,
+      color: '#ffffff',
+      weight: 3,
+      fillColor: '#e53935',
+      fillOpacity: 1
+    }
+  )
+  .addTo(rentalLayer)
+  .bindPopup(
+    '<strong>🏠 Rental property</strong><br>' +
+    'Approximate location'
+  );
+
+  /* Ensure Leaflet fills its container */
+
+  const container = $r('rentalMap');
+
+  container.style.height = '350px';
+  container.style.width = '100%';
+
+  setTimeout(() => {
+    rentalMap.invalidateSize();
+    rentalMap.setView(
+      [position.lat, position.lon],
+      14
+    );
+  }, 250);
+
+  setTimeout(() => {
+    rentalMap.invalidateSize();
+  }, 800);
+}
+
+/* Display selected rental */
+
+async function rentalSelected() {
+  const property =
+    rentals[Number($r('rentalSelect').value)];
+
+  rentalSearchId++;
+
+  if (!property) {
+    $r('rentalDetails').innerHTML = '';
+    $r('rentalNearby').textContent =
+      'Select a rental to begin.';
+    return;
+  }
+
+  $r('rentalDetails').innerHTML =
+    '<strong>' + esc(property.title) + '</strong>' +
+    ' · ' +
+    esc(property.price || 'Price on enquiry') +
+    '<br>' +
+    '<a href="' + esc(property.url) + '"' +
+    ' target="_blank" rel="noopener noreferrer">' +
+    'View original listing ↗</a>' +
+    '<p class="note">' +
+    esc(property.location || property.address || 'Approximate area') +
+    '</p
