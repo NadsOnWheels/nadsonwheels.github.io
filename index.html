@@ -209,3 +209,236 @@ function exportSettings(){saveSettings();const b=new Blob([JSON.stringify(state,
 async function importSettings(e){const f=e.target.files[0];if(!f)return;try{const obj=JSON.parse(await f.text());if(!Array.isArray(obj.places)||!Array.isArray(obj.videos))throw Error();if(obj.myPins&&!Array.isArray(obj.myPins))throw Error();if(obj.customBases&&!Array.isArray(obj.customBases))throw Error();if(obj.generatedLibraries&&(typeof obj.generatedLibraries!=='object'||Array.isArray(obj.generatedLibraries)))throw Error();state={...defaults,...obj};localStorage.setItem(key,JSON.stringify(state));fill();renderCustomBases();syncBasePreset();renderMyPlaces();alert('Backup restored!')}catch(e){alert('That backup does not look right.')}}
 fill();document.getElementById('quickBase').value=adventureBase();document.getElementById('baseStatus').textContent='Current base: '+adventureBase();randomVideo();renderCustomBases();syncBasePreset();updateOpenMapLink();renderMyPlaces();renderLibrarySummary();
 </script><script src="rental-explorer.js?v=restore-20261108" defer></script>
+
+
+<script>
+
+/* Nads' Home Entertainment Upgrade */
+
+(function () {
+
+  const home = document.querySelector('#takehome .result');
+
+  if (!home) return;
+
+  const jokes = [
+
+    "I told my suitcase there would be no holiday this year. Now I'm dealing with emotional baggage.",
+
+    "I used to be indecisive. Now I'm not so sure.",
+
+    "My boss told me to have a good day, so I went home.",
+
+    "I asked the librarian for books about paranoia. She whispered, 'They're right behind you.'",
+
+    "I entered ten puns into a competition. No pun in ten did.",
+
+    "I don't trust stairs. They're always up to something.",
+
+    "I used to hate facial hair, but then it grew on me.",
+
+    "Why did the scarecrow win an award? He was outstanding in his field.",
+
+    "I'm reading a book about anti-gravity. It's impossible to put down.",
+
+    "Why don't skeletons fight? They haven't got the guts.",
+
+    "I told my computer I needed a break. It suggested a holiday in Windows.",
+
+    "Why did the coffee file a police report? It got mugged.",
+
+    "I'm on a seafood diet. I see food and I eat it.",
+
+    "Why was the maths book unhappy? Too many problems.",
+
+    "I asked the baker for a joke. He said he kneaded time.",
+
+    "Why don't scientists trust atoms? They make up everything.",
+
+    "I bought a ceiling fan. Complete waste of money. He just stands there applauding the ceiling.",
+
+    "The past, present and future walked into a pub. It was tense."
+
+  ];
+
+  const proverbs = [
+
+    ["A stitch in time saves nine.", "Deal with small problems before they become expensive ones."],
+
+    ["The squeaky wheel gets the grease.", "Sometimes the loudest complainer gets the attention."],
+
+    ["Fortune favours the bold.", "Opportunity tends to reward a little courage."],
+
+    ["A watched pot never boils.", "Impatience makes waiting feel longer."],
+
+    ["Empty vessels make the most noise.", "Confidence and knowledge are not always travelling companions."],
+
+    ["The proof of the pudding is in the eating.", "Results matter more than promises."],
+
+    ["You can't have your cake and eat it.", "Some choices come with unavoidable trade-offs."],
+
+    ["A rolling stone gathers no moss.", "Constant movement can prevent stagnation, or stability."],
+
+    ["The early bird catches the worm.", "Being prepared and prompt can pay off."],
+
+    ["All that glitters is not gold.", "Appearances can be spectacularly misleading."],
+
+    ["Too many cooks spoil the broth.", "More opinions don't always improve the outcome."],
+
+    ["Still waters run deep.", "Quiet people may have rather more going on than they reveal."],
+
+    ["A bird in the hand is worth two in the bush.", "A certainty can be worth more than an attractive gamble."],
+
+    ["Don't count your chickens before they hatch.", "Celebrate the result, not merely the prediction."],
+
+    ["When in Rome, do as the Romans do.", "Adapt to the customs of your surroundings."],
+
+    ["The pen is mightier than the sword.", "Words and ideas can wield remarkable power."],
+
+    ["Where there's a will, there's a way.", "Determination is a useful travelling companion."],
+
+    ["Actions speak louder than words.", "What you do reveals more than what you promise."]
+
+  ];
+
+  let lastJoke = -1;
+
+  let lastProverb = -1;
+
+  let lastSong = -1;
+
+  function pickDifferent(items, previous) {
+
+    let i = Math.floor(Math.random() * items.length);
+
+    if (items.length > 1 && i === previous) {
+
+      i = (i + 1 + Math.floor(Math.random() * (items.length - 1))) % items.length;
+
+    }
+
+    return i;
+
+  }
+
+  const panel = document.createElement('div');
+
+  panel.innerHTML = `
+
+    <div style="margin-top:20px;border-top:1px solid #52656a;padding-top:18px">
+
+      <div class="eyebrow">JOKE OF THE DAY 😂</div>
+
+      <p id="nadsJoke">One terrible joke, coming right up.</p>
+
+      <button class="secondary" id="nadsNewJoke">🎲 Another joke</button>
+
+    </div>
+
+    <div style="margin-top:22px;border-top:1px solid #52656a;padding-top:18px">
+
+      <div class="eyebrow">PROVERB OF THE DAY 📜</div>
+
+      <p id="nadsProverb">A little wisdom, whether requested or not.</p>
+
+      <p class="note" id="nadsMeaning"></p>
+
+      <button class="secondary" id="nadsNewProverb">🎲 More wisdom</button>
+
+    </div>
+
+  `;
+
+  home.appendChild(panel);
+
+  document.getElementById('nadsNewJoke').onclick = function () {
+
+    lastJoke = pickDifferent(jokes, lastJoke);
+
+    document.getElementById('nadsJoke').textContent = jokes[lastJoke];
+
+  };
+
+  document.getElementById('nadsNewProverb').onclick = function () {
+
+    lastProverb = pickDifferent(proverbs, lastProverb);
+
+    const entry = proverbs[lastProverb];
+
+    document.getElementById('nadsProverb').textContent = entry[0];
+
+    document.getElementById('nadsMeaning').textContent = entry[1];
+
+  };
+
+  // Expand the existing entertainment selection.
+
+  // Links open YouTube search results, not embedded playback.
+
+  const songs = [
+
+    ["The Weeknd", "Blinding Lights"],
+
+    ["The Weeknd", "Starboy"],
+
+    ["The Weeknd", "Save Your Tears"],
+
+    ["The Weeknd", "Can't Feel My Face"],
+
+    ["The Weeknd", "The Hills"],
+
+    ["Drake", "One Dance"],
+
+    ["Drake", "Hotline Bling"],
+
+    ["Drake", "God's Plan"],
+
+    ["Drake", "Hold On We're Going Home"],
+
+    ["Drake", "Passionfruit"],
+
+    ["Michael Jackson", "Billie Jean"],
+
+    ["Michael Jackson", "Beat It"],
+
+    ["Michael Jackson", "Smooth Criminal"],
+
+    ["Michael Jackson", "Thriller"],
+
+    ["Michael Jackson", "Don't Stop 'Til You Get Enough"]
+
+  ];
+
+  window.randomVideo = function () {
+
+    lastSong = pickDifferent(songs, lastSong);
+
+    const song = songs[lastSong];
+
+    const title = document.getElementById('homeVideoTitle');
+
+    const link = document.getElementById('homeVideoLink');
+
+    if (title) title.textContent = song[0] + ' · ' + song[1];
+
+    if (link) {
+
+      link.href = 'https://www.youtube.com/results?search_query=' +
+
+        encodeURIComponent(song[0] + ' ' + song[1] + ' official music video');
+
+      link.textContent = '▶ Find this song';
+
+    }
+
+  };
+
+  document.getElementById('nadsNewJoke').click();
+
+  document.getElementById('nadsNewProverb').click();
+
+  window.randomVideo();
+
+})();
+
+</script>
