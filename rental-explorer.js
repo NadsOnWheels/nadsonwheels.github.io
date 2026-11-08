@@ -36,7 +36,6 @@ async function rentalLocation(p) {
   return p._pos;
 }
 function propertyMarker(pos) {
-  // Circle markers are self-contained SVG: no missing Leaflet pin images.
   return L.circleMarker([pos.lat,pos.lon],{radius:10,color:'#ffffff',weight:3,fillColor:'#1976d2',fillOpacity:1})
     .addTo(rentalLayer).bindPopup('Approximate rental location');
 }
@@ -88,12 +87,11 @@ async function rentalSelected() {
   }
 }
 async function fetchLandmarks(query) {
-  // Public Overpass services can be busy. Try three endpoints, 30 seconds each.
-  const servers=['https://overpass.kumi.systems/api/interpreter','https://overpass.private.coffee/api/interpreter','https://overpass-api.de/api/interpreter'];
+  const servers=['https://overpass.kumi.systems/api/interpreter'];
   let lastError;
   for(const server of servers) {
     const controller=new AbortController();
-    const timeout=setTimeout(()=>controller.abort(),30000);
+    const timeout=setTimeout(()=>controller.abort(),7000);
     try {
       const response=await fetch(server+'?data='+encodeURIComponent(query),{method:'GET',signal:controller.signal});
       if(!response.ok) throw Error('Landmark server returned '+response.status);
@@ -113,7 +111,12 @@ async function loadRentalAmenities() {
   const kind=$r('rentalAmenity').value;
   const output=$r('rentalNearby');
   const request=++amenityRequest;
-  output.textContent='Searching nearby landmarks…';
+  const names={station:'railway stations',school:'schools',supermarket:'supermarkets',park:'parks'};
+  const searchTerm=names[kind]||kind;
+  const searchAddress=property.location||property.address||property.title+', Dartford';
+  const mapsUrl='https://www.google.com/maps/search/?api=1&query='+encodeURIComponent(searchTerm+' near '+searchAddress);
+  const fallback='<a href="'+esc(mapsUrl)+'" target="_blank" rel="noopener noreferrer">🗺️ Find nearby '+esc(searchTerm)+' in Google Maps ↗</a>';
+  output.innerHTML=fallback+'<p class="note">Checking for markers on this map (up to 7 seconds)…</p>';
   try {
     const pos=await rentalLocation(property);
     if(request!==amenityRequest) return;
@@ -135,7 +138,7 @@ async function loadRentalAmenities() {
     if(request!==amenityRequest) return;
     rentalLayer.clearLayers();
     propertyMarker(pos);
-    if(!places.length) { output.textContent='No nearby '+kind+' locations found in OpenStreetMap.'; return; }
+    if(!places.length) { output.innerHTML=fallback+'<p class="note">No local markers returned.</p>'; return; }
     output.innerHTML=places.map(place=>{
       const directions='https://www.google.com/maps/dir/?api=1&origin='+encodeURIComponent(pos.lat+','+pos.lon)+'&destination='+encodeURIComponent(place.lat+','+place.lon)+'&travelmode=walking';
       return '<div class="rental-item"><strong>'+esc(place.name)+'</strong> · '+dist(pos,place)+' straight line <a href="'+directions+'" target="_blank" rel="noopener noreferrer">Walking route ↗</a></div>';
@@ -143,7 +146,7 @@ async function loadRentalAmenities() {
     places.forEach(place=>L.circleMarker([place.lat,place.lon],{radius:8,color:'#b88746',weight:3,fillColor:'#eabf82',fillOpacity:.95}).addTo(rentalLayer).bindPopup(esc(place.name)+' · '+dist(pos,place)));
     rentalMap.invalidateSize({pan:false,animate:false});
   } catch(e) {
-    if(request===amenityRequest) output.textContent='Nearby search unavailable: '+e.message+'. Please try again later.';
+    if(request===amenityRequest) output.innerHTML=fallback+'<p class="note">Markers unavailable just now. The Google Maps search remains available.</p>';
   }
 }
 async function compareRentals() {
