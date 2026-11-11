@@ -201,7 +201,7 @@ function saveSettings(){for(const k of ['homeAddress','workAddress','startPoint'
 function exportSettings(){saveSettings();const b=new Blob([JSON.stringify(state,null,2)],{type:'application/json'}),a=document.createElement('a');a.href=URL.createObjectURL(b);a.download='nads-open-road-backup.json';a.click();setTimeout(()=>URL.revokeObjectURL(a.href),2000)}
 async function importSettings(e){const f=e.target.files[0];if(!f)return;try{const obj=JSON.parse(await f.text());if(!Array.isArray(obj.places)||!Array.isArray(obj.videos))throw Error();if(obj.myPins&&!Array.isArray(obj.myPins))throw Error();if(obj.customBases&&!Array.isArray(obj.customBases))throw Error();if(obj.generatedLibraries&&(typeof obj.generatedLibraries!=='object'||Array.isArray(obj.generatedLibraries)))throw Error();state={...defaults,...obj};localStorage.setItem(key,JSON.stringify(state));fill();renderCustomBases();syncBasePreset();renderMyPlaces();alert('Backup restored!')}catch(e){alert('That backup does not look right.')}}
 fill();document.getElementById('quickBase').value=adventureBase();document.getElementById('baseStatus').textContent='Current base: '+adventureBase();randomVideo();renderCustomBases();syncBasePreset();updateOpenMapLink();renderMyPlaces();renderLibrarySummary();
-</script><script src="rental-explorer.js?v=restore-20261108" defer></script>
+</script><script src="rental-explorer.js?v=12" defer></script>
 
 
 
