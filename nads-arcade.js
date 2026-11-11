@@ -1,6 +1,6 @@
 
 /* NAD'S ADVENTURES IN SUPER MARIO LAND
-   THE QUEST FOR 5 O'CLOCK
+   THE QUEST FOR 5:30
    Original retro platformer and Hall of Fame.
 */
 (() => {
@@ -47,9 +47,9 @@
     const root = document.createElement('section');
     root.id = 'nadsArcade';
     root.innerHTML = `
-      <h2>🍄 NAD'S ADVENTURES IN<br>SUPER MARIO LAND</h2>
-      <p>★ THE QUEST FOR 5 O'CLOCK ★</p>
-      <p class="small">Eight colleagues. Four worlds. One escape.</p>
+<h2>🍄 NAD'S ADVENTURES IN<br>SUPER MARIO LAND</h2>
+<p>★ THE QUEST FOR 5:30 ★</p>
+<p class="small">Eight colleagues. One epic adventure to hometime!</p>
       <p id="nadsHud">WORLD 1-1 · SCORE 0 · LIVES 3</p>
       <canvas id="nadsCanvas" width="480" height="256"></canvas>
       <p id="nadsMessage" class="message">Press START to begin!</p>
@@ -328,8 +328,8 @@
         recordRun(true);
         message(
           score>startingBest
-            ?"🏆 NEW HIGH SCORE! FIVE O'CLOCK! Kim approves your escape. Ali awards coffee and a pay rise!"
-            :"🏆 FIVE O'CLOCK! Kim approves your escape. Ali awards coffee and a pay rise!",
+            ?"🏆 NEW HIGH SCORE! 5:30! Kim approves your escape."
+            :"🏆 5:30! Kim approves your escape.",
           99
         );
         $('nadsStart').textContent='▶ PLAY AGAIN';
@@ -539,7 +539,7 @@
         ctx.font='bold 22px monospace';
         ctx.fillText('QUEST COMPLETE!',110,113);
         ctx.font='14px monospace';
-        ctx.fillText("FIVE O'CLOCK. FREEDOM!",112,143);
+        ctx.fillText("5:30. FREEDOM!",112,143);
       }
     }
 
