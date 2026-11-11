@@ -47,7 +47,7 @@
     const root = document.createElement('section');
     root.id = 'nadsArcade';
     root.innerHTML = `
-<h2>🍄 NAD'S ADVENTURES IN<br>SUPER MARIO LAND</h2>
+<h2>🍄 NAD'S ADVENTURES IN<br>TEMU MARIO LAND</h2>
 <p>★ THE QUEST FOR 5:30 ★</p>
 <p class="small">Eight colleagues. One epic adventure to hometime!</p>
       <p id="nadsHud">WORLD 1-1 · SCORE 0 · LIVES 3</p>
