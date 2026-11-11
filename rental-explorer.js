@@ -226,8 +226,6 @@ async function showAllRentals() {
     animate: false
   });
 loadDefaultLandmarks();
-  $r('rentalNearby').textContent =
-    'Select a property pin to view its details.';
 
   setTimeout(() => rentalMap.invalidateSize(), 400);
 }
