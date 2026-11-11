@@ -93,7 +93,11 @@ async function rentalSelected() {
   }
 }
 async function fetchLandmarks(query) {
-  const servers=['https://overpass.kumi.systems/api/interpreter'];
+const servers=[
+  'https://overpass.private.coffee/api/interpreter',
+  'https://overpass.kumi.systems/api/interpreter',
+  'https://overpass-api.de/api/interpreter'
+];
   let lastError;
   for(const server of servers) {
     const controller=new AbortController();
