@@ -16,7 +16,8 @@ async function loadRentals() {
     const options='<option value="">Select a property…</option>'+rentals.map((x,i)=>'<option value="'+i+'">'+esc(x.title)+' · '+esc(x.price||'Price on enquiry')+'</option>').join('');
     $r('rentalSelect').innerHTML=options;
     $r('compareRental').innerHTML=options;
-    if(!rentals.length) $r('rentalStatus').textContent='No current listings in the snapshot.';
+    if(!rentals.length) $r('rentalStatus').textContent='No current listings in the snapshot
+      if(rentals.length) await showAllRentals();.';
   } catch(e) {
     $r('rentalStatus').textContent='Rental listings are currently unavailable.';
     $r('rentalSelect').innerHTML='<option value="">No data available</option>';
@@ -158,5 +159,70 @@ async function compareRentals() {
     const [a,b,landmark]=await Promise.all([rentalLocation(first),rentalLocation(second),geocode(query+', Kent, UK')]);
     output.innerHTML='<div class="rental-item">'+esc(first.title)+': <strong>'+dist(a,landmark)+'</strong></div><div class="rental-item">'+esc(second.title)+': <strong>'+dist(b,landmark)+'</strong></div><p class="note">Straight-line estimates only; locations may be approximate.</p>';
   } catch(e) {output.textContent='Comparison unavailable: '+e.message;}
+}
+
+async function showAllRentals() {
+  const results = await Promise.allSettled(
+    rentals.map(async property => ({
+      property,
+      pos: await rentalLocation(property)
+    }))
+  );
+
+  const located = results
+    .filter(result => result.status === 'fulfilled')
+    .map(result => result.value)
+    .filter(item =>
+      Number.isFinite(item.pos.lat) &&
+      Number.isFinite(item.pos.lon)
+    );
+
+  if (!located.length) {
+    $r('rentalNearby').textContent =
+      'Property locations could not be mapped.';
+    return;
+  }
+
+  ensureRentalMap(located[0].pos);
+  rentalLayer.clearLayers();
+
+  const bounds = L.latLngBounds([]);
+
+  located.forEach(({property, pos}) => {
+    bounds.extend([pos.lat, pos.lon]);
+
+    const popup = document.createElement('div');
+    const heading = document.createElement('strong');
+    heading.textContent = property.title;
+
+    const price = document.createElement('p');
+    price.textContent = property.price || 'Price on enquiry';
+
+    const link = document.createElement('a');
+    link.href = property.url;
+    link.target = '_blank';
+    link.rel = 'noopener noreferrer';
+    link.textContent = 'View property listing';
+
+    popup.append(heading, price, link);
+
+    L.circleMarker([pos.lat, pos.lon], {
+      radius: 10,
+      color: '#ffffff',
+      weight: 3,
+      fillColor: '#1976d2',
+      fillOpacity: 1
+    }).addTo(rentalLayer).bindPopup(popup);
+  });
+
+  rentalMap.fitBounds(bounds.pad(0.15), {
+    maxZoom: 15,
+    animate: false
+  });
+
+  $r('rentalNearby').textContent =
+    'Select a property pin to view its details.';
+
+  setTimeout(() => rentalMap.invalidateSize(), 400);
 }
 loadRentals();
