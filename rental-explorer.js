@@ -1,6 +1,8 @@
 
 /* Nads' Rental Explorer. Public listings only. */
 let rentals = [], rentalMap = null, rentalLayer = null;
+let rentalLandmarkLayer = null;
+let rentalLandmarkLayer = null;
 let rentalAmenityCache = {}, rentalRequest = 0, amenityRequest = 0;
 const $r = id => document.getElementById(id);
 const esc = v => String(v ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
@@ -62,6 +64,7 @@ function ensureRentalMap(pos) {
     rentalMap=L.map(container,{zoomControl:true,scrollWheelZoom:false});
     L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:19,attribution:'© OpenStreetMap contributors'}).addTo(rentalMap);
     rentalLayer=L.layerGroup().addTo(rentalMap);
+    rentalLandmarkLayer=L.layerGroup().addTo(rentalMap);
   }
   rentalLayer.clearLayers();
   rentalMap.setView([pos.lat,pos.lon],14,{animate:false});
@@ -185,6 +188,7 @@ async function showAllRentals() {
 
   ensureRentalMap(located[0].pos);
   rentalLayer.clearLayers();
+  
 
   const bounds = L.latLngBounds([]);
 
@@ -219,10 +223,102 @@ async function showAllRentals() {
     maxZoom: 15,
     animate: false
   });
-
+loadDefaultLandmarks();
   $r('rentalNearby').textContent =
     'Select a property pin to view its details.';
 
   setTimeout(() => rentalMap.invalidateSize(), 400);
+}
+
+async function loadDefaultLandmarks() {
+  if (!rentalMap || !rentalLandmarkLayer) return;
+
+  rentalLandmarkLayer.clearLayers();
+
+  const bounds = rentalMap.getBounds();
+  const centre = bounds.getCenter();
+
+  // Search around the displayed rental area.
+  const radius = Math.min(
+    15000,
+    Math.max(4000, Math.round(
+      rentalMap.distance(
+        centre,
+        bounds.getNorthEast()
+      ) + 1000
+    ))
+  );
+
+  const query =
+    '[out:json][timeout:25];(' +
+    'node(around:' + radius + ',' +
+      centre.lat + ',' + centre.lng +
+      ')["railway"="station"];' +
+    'way(around:' + radius + ',' +
+      centre.lat + ',' + centre.lng +
+      ')["railway"="station"];' +
+    'node(around:' + radius + ',' +
+      centre.lat + ',' + centre.lng +
+      ')["amenity"="school"];' +
+    'way(around:' + radius + ',' +
+      centre.lat + ',' + centre.lng +
+      ')["amenity"="school"];' +
+    ');out center 150;';
+
+  const output = $r('rentalNearby');
+  output.textContent =
+    'Loading nearby schools and railway stations…';
+
+  try {
+    const data = await fetchLandmarks(query);
+    const seen = new Set();
+    let count = 0;
+
+    for (const item of data.elements || []) {
+      const lat = Number(item.lat ?? item.center?.lat);
+      const lon = Number(item.lon ?? item.center?.lon);
+
+      if (!Number.isFinite(lat) ||
+          !Number.isFinite(lon)) continue;
+
+      const school = item.tags?.amenity === 'school';
+      const station = item.tags?.railway === 'station';
+
+      if (!school && !station) continue;
+
+      const name = item.tags?.name ||
+        (school ? 'Unnamed school' : 'Railway station');
+
+      const key = name + ':' +
+        lat.toFixed(3) + ':' + lon.toFixed(3);
+
+      if (seen.has(key)) continue;
+      seen.add(key);
+
+      const marker = L.circleMarker([lat,lon], {
+        radius: school ? 6 : 8,
+        color: '#ffffff',
+        weight: 2,
+        fillColor: school ? '#f0ad4e' : '#8657c9',
+        fillOpacity: 0.95
+      });
+
+      marker.bindPopup(
+        (school ? '🏫 ' : '🚉 ') + esc(name)
+      );
+
+      marker.addTo(rentalLandmarkLayer);
+      count++;
+    }
+
+    output.textContent =
+      count + ' nearby schools and stations mapped. ' +
+      'Blue: rentals · Orange: schools · Purple: stations.';
+
+  } catch (error) {
+    output.textContent =
+      'Nearby school and station markers are temporarily ' +
+      'unavailable. Property markers remain visible.';
+  }
 }
 loadRentals();
