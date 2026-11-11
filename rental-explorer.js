@@ -2,7 +2,6 @@
 /* Nads' Rental Explorer. Public listings only. */
 let rentals = [], rentalMap = null, rentalLayer = null;
 let rentalLandmarkLayer = null;
-let rentalLandmarkLayer = null;
 let rentalAmenityCache = {}, rentalRequest = 0, amenityRequest = 0;
 const $r = id => document.getElementById(id);
 const esc = v => String(v ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
@@ -18,8 +17,11 @@ async function loadRentals() {
     const options='<option value="">Select a property…</option>'+rentals.map((x,i)=>'<option value="'+i+'">'+esc(x.title)+' · '+esc(x.price||'Price on enquiry')+'</option>').join('');
     $r('rentalSelect').innerHTML=options;
     $r('compareRental').innerHTML=options;
-    if(!rentals.length) $r('rentalStatus').textContent='No current listings in the snapshot
-      if(rentals.length) await showAllRentals();.';
+    if(!rentals.length) {
+  $r('rentalStatus').textContent =
+    'No current listings in the snapshot.';
+}
+if(rentals.length) await showAllRentals();
   } catch(e) {
     $r('rentalStatus').textContent='Rental listings are currently unavailable.';
     $r('rentalSelect').innerHTML='<option value="">No data available</option>';
