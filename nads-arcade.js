@@ -49,7 +49,7 @@
     root.innerHTML = `
 <h2>🍄 NAD'S ADVENTURES IN<br>TEMU MARIO LAND</h2>
 <p>★ THE QUEST FOR 5:30 ★</p>
-<p class="small">Eight colleagues. One epic adventure to hometime!</p>
+
       <p id="nadsHud">WORLD 1-1 · SCORE 0 · LIVES 3</p>
       <canvas id="nadsCanvas" width="480" height="256"></canvas>
       <p id="nadsMessage" class="message">Press START to begin!</p>
