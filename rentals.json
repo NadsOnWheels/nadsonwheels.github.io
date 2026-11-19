@@ -1,16 +1,192 @@
-
 {
-  "updated": "2026-11-08",
-  "notice": "Manual test listing. Confirm availability with Land Estates.",
+  "updated": "2026-11-19 13:59 UTC",
+  "notice": "Public listings; confirm availability with Land Estates",
   "properties": [
     {
-      "title": "Flat K, Moatfield House, Highfield Road, Dartford",
-      "address": "Flat K, Moatfield House, Highfield Road, Dartford",
-      "location": "Highfield Road, Dartford, Kent, UK",
-"lat": 51.440813,
-"lon": 0.212655,
-      "url": "https://www.landestate.co.uk/property-to-rent/dartford/flat-k-moatfield-househighfield-roaddartford/"
+      "title": "Ridgeway, Crayford",
+      "price": "£1,350 pcm",
+      "url": "https://www.landestate.co.uk/property-to-rent/crayford/ridgeway-crayford/",
+      "location": "Ridgeway, Crayford, Kent, UK"
+    },
+    {
+      "title": "Bull Head Yard, Dartford High Street,Dartford",
+      "price": "£1,550 pcm",
+      "url": "https://www.landestate.co.uk/property-to-rent/dartford/bull-head-yarddartford-high-streetdartford/",
+      "location": "Bull Head Yard, Dartford High Street,Dartford, Kent, UK"
+    },
+    {
+      "title": "Cairns Close,Dartford",
+      "price": "£1,900 pcm",
+      "url": "https://www.landestate.co.uk/property-to-rent/dartford/cairns-closedartford/",
+      "location": "Cairns Close,Dartford, Kent, UK"
+    },
+    {
+      "title": "Darenth Road,Dartford",
+      "price": "£1,850 pcm",
+      "url": "https://www.landestate.co.uk/property-to-rent/dartford/darenth-roaddartford/",
+      "location": "Darenth Road,Dartford, Kent, UK"
+    },
+    {
+      "title": "Dorney Place, Dartford",
+      "price": "£700 pcm",
+      "url": "https://www.landestate.co.uk/property-to-rent/dartford/dorney-place-dartford-2/",
+      "location": "Dorney Place, Dartford, Kent, UK"
+    },
+    {
+      "title": "Ellingham View, Dartford",
+      "price": "£2,250 pcm",
+      "url": "https://www.landestate.co.uk/property-to-rent/dartford/ellingham-view-dartford/",
+      "location": "Ellingham View, Dartford, Kent, UK"
+    },
+    {
+      "title": "Flat 12 Moatfield House,Highfield Road,Dartford",
+      "price": "£1,000 pcm",
+      "url": "https://www.landestate.co.uk/property-to-rent/dartford/flat-12-moatfield-househighfield-roaddartford/",
+      "location": "Flat 12 Moatfield House,Highfield Road,Dartford, Kent, UK"
+    },
+    {
+      "title": "Flat 13 Cliffside Court,West Hill,Dartford",
+      "price": "£1,450 pcm",
+      "url": "https://www.landestate.co.uk/property-to-rent/dartford/flat-13-cliffside-courtwest-hilldartford/",
+      "location": "Flat 13 Cliffside Court,West Hill,Dartford, Kent, UK"
+    },
+    {
+      "title": "Flat 27 Kenwyn Road,Dartford",
+      "price": "£1,100 pcm",
+      "url": "https://www.landestate.co.uk/property-to-rent/dartford/flat-27-kenwyn-roaddartford/",
+      "location": "Flat 27 Kenwyn Road,Dartford, Kent, UK"
+    },
+    {
+      "title": "Flat 3 Walterstown Court,Highfield Road,Dartford",
+      "price": "£1,475 pcm",
+      "url": "https://www.landestate.co.uk/property-to-rent/dartford/flat-3-walterstown-courthighfield-roaddartford/",
+      "location": "Flat 3 Walterstown Court,Highfield Road,Dartford, Kent, UK"
+    },
+    {
+      "title": "Flat K Moatfield House,Highfield Road,Dartford",
+      "price": "£1,175 pcm",
+      "url": "https://www.landestate.co.uk/property-to-rent/dartford/flat-k-moatfield-househighfield-roaddartford/",
+      "location": "Flat K Moatfield House,Highfield Road,Dartford, Kent, UK"
+    },
+    {
+      "title": "Gladstone Road,Dartford",
+      "price": "£1,525 pcm",
+      "url": "https://www.landestate.co.uk/property-to-rent/dartford/gladstone-roaddartford/",
+      "location": "Gladstone Road,Dartford, Kent, UK"
+    },
+    {
+      "title": "Highfield Road,Dartford",
+      "price": "£1,150 pcm",
+      "url": "https://www.landestate.co.uk/property-to-rent/dartford/highfield-roaddartford/",
+      "location": "Highfield Road,Dartford, Kent, UK"
+    },
+    {
+      "title": "Howard Road,Dartford",
+      "price": "£1,550 pcm",
+      "url": "https://www.landestate.co.uk/property-to-rent/dartford/howard-roaddartford/",
+      "location": "Howard Road,Dartford, Kent, UK"
+    },
+    {
+      "title": "Hyde Grove, Dartford",
+      "price": "£1,500 pcm",
+      "url": "https://www.landestate.co.uk/property-to-rent/dartford/hyde-grove-dartford/",
+      "location": "Hyde Grove, Dartford, Kent, UK"
+    },
+    {
+      "title": "Miskin Road, Dartford",
+      "price": "£2,000 pcm",
+      "url": "https://www.landestate.co.uk/property-to-rent/dartford/miskin-road-dartford/",
+      "location": "Miskin Road, Dartford, Kent, UK"
+    },
+    {
+      "title": "Phoenix Place, Dartford",
+      "price": "£750 pcm",
+      "url": "https://www.landestate.co.uk/property-to-rent/dartford/phoenix-place-dartford/",
+      "location": "Phoenix Place, Dartford, Kent, UK"
+    },
+    {
+      "title": "Priory Road, Dartford",
+      "price": "£950 pcm",
+      "url": "https://www.landestate.co.uk/property-to-rent/dartford/priory-road-dartford/",
+      "location": "Priory Road, Dartford, Kent, UK"
+    },
+    {
+      "title": "Priory Road,Room 1 (A),Dartford",
+      "price": "£950 pcm",
+      "url": "https://www.landestate.co.uk/property-to-rent/dartford/priory-roadroom-1-adartford/",
+      "location": "Priory Road,Room 1 (A),Dartford, Kent, UK"
+    },
+    {
+      "title": "Shirley Close, Dartford",
+      "price": "£1,400 pcm",
+      "url": "https://www.landestate.co.uk/property-to-rent/dartford/shirley-close-dartford-2/",
+      "location": "Shirley Close, Dartford, Kent, UK"
+    },
+    {
+      "title": "St Albans Road,Room 4,Dartford",
+      "price": "£725 pcm",
+      "url": "https://www.landestate.co.uk/property-to-rent/dartford/st-albans-roadroom-4dartford/",
+      "location": "St Albans Road,Room 4,Dartford, Kent, UK"
+    },
+    {
+      "title": "The Brent",
+      "price": "£900 pcm",
+      "url": "https://www.landestate.co.uk/property-to-rent/dartford/the-brent-2/",
+      "location": "The Brent, Kent, UK"
+    },
+    {
+      "title": "The Brent",
+      "price": "£900 pcm",
+      "url": "https://www.landestate.co.uk/property-to-rent/dartford/the-brent/",
+      "location": "The Brent, Kent, UK"
+    },
+    {
+      "title": "Waid Close, Dartford",
+      "price": "£900 pcm",
+      "url": "https://www.landestate.co.uk/property-to-rent/dartford/waid-close-dartford-2/",
+      "location": "Waid Close, Dartford, Kent, UK"
+    },
+    {
+      "title": "Waid Close, Dartford",
+      "price": "£900 pcm",
+      "url": "https://www.landestate.co.uk/property-to-rent/dartford/waid-close-dartford-3/",
+      "location": "Waid Close, Dartford, Kent, UK"
+    },
+    {
+      "title": "Waid Close, Dartford",
+      "price": "£900 pcm",
+      "url": "https://www.landestate.co.uk/property-to-rent/dartford/waid-close-dartford/",
+      "location": "Waid Close, Dartford, Kent, UK"
+    },
+    {
+      "title": "Wyatt Road,Dartford",
+      "price": "£1,600 pcm",
+      "url": "https://www.landestate.co.uk/property-to-rent/dartford/wyatt-roaddartford/",
+      "location": "Wyatt Road,Dartford, Kent, UK"
+    },
+    {
+      "title": "Chinbrook Crescent,Chinbrook",
+      "price": "£1,600 pcm",
+      "url": "https://www.landestate.co.uk/property-to-rent/london/chinbrook-crescentchinbrook/",
+      "location": "Chinbrook Crescent,Chinbrook, Kent, UK"
+    },
+    {
+      "title": "Guerin Mews, Fawkham Road, West Kingsdown, Sevenoaks",
+      "price": "£2,500 pcm",
+      "url": "https://www.landestate.co.uk/property-to-rent/sevenoaks/guerin-mews-fawkham-road-west-kingsdown-sevenoaks-2/",
+      "location": "Guerin Mews, Fawkham Road, West Kingsdown, Sevenoaks, Kent, UK"
+    },
+    {
+      "title": "Guerin Mews, Fawkham Road, West Kingsdown, Sevenoaks",
+      "price": "£3,000 pcm",
+      "url": "https://www.landestate.co.uk/property-to-rent/sevenoaks/guerin-mews-fawkham-road-west-kingsdown-sevenoaks/",
+      "location": "Guerin Mews, Fawkham Road, West Kingsdown, Sevenoaks, Kent, UK"
+    },
+    {
+      "title": "Longtown Court,Osborne Road,Dartford",
+      "price": "£1,550 pcm",
+      "url": "https://www.landestate.co.uk/property-to-rent/stone/longtown-courtosborne-roaddartford/",
+      "location": "Longtown Court,Osborne Road,Dartford, Kent, UK"
     }
   ]
 }
-  
