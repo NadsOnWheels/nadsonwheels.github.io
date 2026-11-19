@@ -24,6 +24,22 @@ def sitemap(url,depth=0):
    if u.endswith('.xml') and u.startswith(ROOT):sitemap(u,depth+1)
    elif '/property-to-rent/' in u and u.startswith(ROOT):urls.append(u)
 sitemap(ROOT+'/sitemap_index.xml');sitemap(ROOT+'/wp-sitemap.xml')
+
+print('DIAGNOSTIC: Sitemap property URLs found:', len(urls), flush=True)
+print('DIAGNOSTIC: First five URLs:', urls[:5], flush=True)
+test_url = ROOT + '/properties/?availability=9&department=residential-lettings'
+try:
+    test_html = get(test_url)
+    test_soup = BeautifulSoup(test_html, 'html.parser')
+    test_links = [
+        a.get('href') for a in test_soup.find_all('a', href=True)
+        if '/property-to-rent/' in a.get('href', '')
+    ]
+    print('DIAGNOSTIC: Search page accessible: YES', flush=True)
+    print('DIAGNOSTIC: Property links found:', len(test_links), flush=True)
+    print('DIAGNOSTIC: Sample links:', test_links[:5], flush=True)
+except Exception as e:
+    print('DIAGNOSTIC: Search page failed:', repr(e), flush=True)
 # Do not infer current inventory from old indexed property pages.
 if not urls:raise SystemExit('No rental listing URLs discovered; preserving previous snapshot.')
 properties=[]
