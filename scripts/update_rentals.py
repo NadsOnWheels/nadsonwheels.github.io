@@ -1,69 +1,124 @@
-"""Refresh publicly advertised rental listings. Respect robots.txt and use light requests."""
-import datetime,json,re,time,urllib.parse,urllib.robotparser,xml.etree.ElementTree as ET
+
+"""Refresh publicly advertised Land Estates rental listings."""
+
+import datetime
+import json
+import time
+import urllib.parse
+import urllib.robotparser
 from pathlib import Path
+
 import requests
 from bs4 import BeautifulSoup
-ROOT='https://www.landestate.co.uk'
-UA='NadsRentalExplorer/1.0 (public listing metadata; respectful daily check)'
-s=requests.Session();s.headers.update({'User-Agent':UA})
-robots=urllib.robotparser.RobotFileParser();robots.set_url(ROOT+'/robots.txt')
-try: robots.read()
-except Exception as e: raise SystemExit('Could not check robots.txt: '+str(e))
-def get(url):
- if not url.startswith(ROOT+'/') or not robots.can_fetch(UA,url):raise ValueError('Robots policy does not permit '+url)
- r=s.get(url,timeout=18);r.raise_for_status();time.sleep(1);return r.text
-seen=set();urls=[]
-def sitemap(url,depth=0):
- if depth>3 or url in seen:return
- seen.add(url)
- try: raw=get(url);root=ET.fromstring(raw)
- except Exception as e:print('Sitemap unavailable',url,e);return
- for e in root.iter():
-  if e.tag.endswith('loc') and e.text:
-   u=e.text.strip()
-   if u.endswith('.xml') and u.startswith(ROOT):sitemap(u,depth+1)
-   elif '/property-to-rent/' in u and u.startswith(ROOT):urls.append(u)
-sitemap(ROOT+'/sitemap_index.xml');sitemap(ROOT+'/wp-sitemap.xml')
 
-print('DIAGNOSTIC: Sitemap property URLs found:', len(urls), flush=True)
-print('DIAGNOSTIC: First five URLs:', urls[:5], flush=True)
-test_url = ROOT + '/properties/?availability=9&department=residential-lettings'
-try:
-    test_html = get(test_url)
-    test_soup = BeautifulSoup(test_html, 'html.parser')
-    test_links = [
-        a.get('href') for a in test_soup.find_all('a', href=True)
-        if '/property-to-rent/' in a.get('href', '')
-    ]
-    print('DIAGNOSTIC: Search page accessible: YES', flush=True)
-    print('DIAGNOSTIC: Property links found:', len(test_links), flush=True)
-    print('DIAGNOSTIC: Sample links:', test_links[:5], flush=True)
+ROOT = "https://www.landestate.co.uk"
+SEARCH = ROOT + "/properties/?availability=9&department=residential-lettings"
+UA = "NadsRentalExplorer/1.0 (public rental listings)"
+OUTPUT = Path("rentals.json")
+
+session = requests.Session()
+session.headers.update({"User-Agent": UA})
+
+robots = urllib.robotparser.RobotFileParser()
+robots.set_url(ROOT + "/robots.txt")
+robots.read()
 
 
-    print('DIAGNOSTIC: Unique property links:', len(set(test_links)), flush=True)
-    print('DIAGNOSTIC: Pagination links:', [
-        a.get('href') for a in test_soup.find_all('a', href=True)
-        if 'page/' in a.get('href', '') or 'paged=' in a.get('href', '')
-    ][:10], flush=True)
-except Exception as e:
-    print('DIAGNOSTIC: Search page failed:', repr(e), flush=True)
+def fetch(url):
+    parsed = urllib.parse.urlparse(url)
+    if parsed.scheme != "https" or parsed.netloc != "www.landestate.co.uk":
+        raise ValueError("Unexpected website: " + url)
+    if not robots.can_fetch(UA, url):
+        raise ValueError("Blocked by robots.txt: " + url)
 
-# Do not infer current inventory from old indexed property pages.
-if not urls:raise SystemExit('No rental listing URLs discovered; preserving previous snapshot.')
-properties=[]
-for u in dict.fromkeys(urls):
- try:
-  soup=BeautifulSoup(get(u),'html.parser')
-  text=soup.get_text(' ',strip=True)
-  if not re.search(r'\bTo Let\b',text,re.I) or re.search(r'\bLet Agreed\b|\bLet By\b',text[:900],re.I):continue
-  h=soup.find('h1');title=h.get_text(' ',strip=True) if h else ''
-  if not title:continue
-  m=re.search(r'£[\d,]+\s*(?:pcm|pw|per month)',text,re.I)
-  price=m.group(0) if m else ''
-  location=title.replace(',',', ')
-  properties.append({'title':title,'price':price,'url':u,'location':location+', Kent, UK'})
- except Exception as e:print('Skipped',u,e)
-if not properties:raise SystemExit('No confirmed To Let properties; preserving previous snapshot.')
-output={'updated':datetime.datetime.now(datetime.timezone.utc).strftime('%Y-%m-%d %H:%M UTC'),'notice':'Public listings; verify status with Land Estates','properties':properties}
-Path('rentals.json').write_text(json.dumps(output,ensure_ascii=False,indent=2)+'\n')
-print('Wrote',len(properties),'rental listings')
+    response = session.get(url, timeout=20)
+    response.raise_for_status()
+    time.sleep(1)
+    return BeautifulSoup(response.text, "html.parser")
+
+
+def clean_url(url):
+    return urllib.parse.urljoin(ROOT, url).split("?")[0].split("#")[0]
+
+
+print("Fetching current To Let search results...", flush=True)
+search_page = fetch(SEARCH)
+
+links = sorted({
+    clean_url(a["href"])
+    for a in search_page.find_all("a", href=True)
+    if "/property-to-rent/" in a["href"]
+    and urllib.parse.urlparse(clean_url(a["href"])).netloc
+    == "www.landestate.co.uk"
+})
+
+print("Unique candidate listings:", len(links), flush=True)
+
+if not links:
+    raise SystemExit("No listings found. Previous data preserved.")
+
+properties = []
+failures = []
+
+for url in links:
+    try:
+        page = fetch(url)
+
+        flag = page.select_one(".images .flag")
+        status = flag.get_text(" ", strip=True) if flag else ""
+
+        if status.casefold() != "to let":
+            print("Excluded:", status or "No status", url, flush=True)
+            continue
+
+        heading = page.find("h1")
+        title = heading.get_text(" ", strip=True) if heading else ""
+
+        price_element = page.select_one(
+            ".elementor-widget-property-price .price"
+        )
+        price = (
+            price_element.get_text(" ", strip=True)
+            if price_element else ""
+        )
+
+        if not title or not price:
+            failures.append(url)
+            print("Missing title or price:", url, flush=True)
+            continue
+
+        properties.append({
+            "title": title,
+            "price": price,
+            "url": url,
+            "location": title + ", Kent, UK"
+        })
+
+        print("To Let:", title, "|", price, flush=True)
+
+    except Exception as error:
+        failures.append(url)
+        print("ERROR:", url, repr(error), flush=True)
+
+print("Confirmed To Let:", len(properties), flush=True)
+print("Unverified listings:", len(failures), flush=True)
+
+if not properties or failures:
+    raise SystemExit(
+        "Incomplete verification. Previous data preserved."
+    )
+
+output = {
+    "updated": datetime.datetime.now(
+        datetime.timezone.utc
+    ).strftime("%Y-%m-%d %H:%M UTC"),
+    "notice": "Public listings; confirm availability with Land Estates",
+    "properties": properties
+}
+
+OUTPUT.write_text(
+    json.dumps(output, ensure_ascii=False, indent=2) + "\n",
+    encoding="utf-8"
+)
+
+print("SUCCESS: Published", len(properties), "rental listings")
