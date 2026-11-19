@@ -38,6 +38,17 @@ try:
     print('DIAGNOSTIC: Search page accessible: YES', flush=True)
     print('DIAGNOSTIC: Property links found:', len(test_links), flush=True)
     print('DIAGNOSTIC: Sample links:', test_links[:5], flush=True)
+
+unique_links = sorted(set(
+    urllib.parse.urljoin(ROOT, link)
+    for link in test_links if link
+))
+print('DIAGNOSTIC: Unique property links:', len(unique_links), flush=True)
+pagination = [
+    a.get('href') for a in test_soup.find_all('a', href=True)
+    if 'page/' in a.get('href', '') or 'paged=' in a.get('href', '')
+]
+print('DIAGNOSTIC: Pagination links:', sorted(set(pagination))[:10], flush=True)
 except Exception as e:
     print('DIAGNOSTIC: Search page failed:', repr(e), flush=True)
 # Do not infer current inventory from old indexed property pages.
