@@ -87,12 +87,28 @@ for url in links:
             print("Missing title or price:", url, flush=True)
             continue
 
-        properties.append({
+        property_data = {
             "title": title,
             "price": price,
             "url": url,
             "location": title + ", Kent, UK"
-        })
+        }
+
+        import re
+
+        geo = re.search(
+            r'"geo"\s*:\s*\{[^}]*"latitude"\s*:\s*"?(-?\d+(?:\.\d+)?)"?[^}]*"longitude"\s*:\s*"?(-?\d+(?:\.\d+)?)"?',
+            str(page)
+        )
+
+        if geo:
+            property_data["lat"] = float(geo.group(1))
+            property_data["lon"] = float(geo.group(2))
+            print("Coordinates found:", title, flush=True)
+        else:
+            print("Coordinates missing:", title, flush=True)
+
+        properties.append(property_data)
 
         print("To Let:", title, "|", price, flush=True)
 
