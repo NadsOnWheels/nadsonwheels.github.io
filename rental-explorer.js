@@ -201,29 +201,58 @@ async function showAllRentals() {
   located.forEach(({property, pos}) => {
     bounds.extend([pos.lat, pos.lon]);
 
+    let group = groups.find(g => km(g.pos, pos) <= 0.04);
+
+    if (!group) {
+      group = {pos, properties: []};
+      groups.push(group);
+    }
+
+    group.properties.push(property);
+  });
+
+  groups.forEach(({pos, properties}) => {
     const popup = document.createElement('div');
-    const heading = document.createElement('strong');
-    heading.textContent = property.title;
 
-    const price = document.createElement('p');
-    price.textContent = property.price || 'Price on enquiry';
+    if (properties.length > 1) {
+      const summary = document.createElement('strong');
+      summary.textContent =
+        properties.length + ' rentals at or near this location';
+      popup.append(summary, document.createElement('hr'));
+    }
 
-    const link = document.createElement('a');
-    link.href = property.url;
-    link.target = '_blank';
-    link.rel = 'noopener noreferrer';
-    link.textContent = 'View property listing';
+    properties.forEach((property, index) => {
+      if (index > 0) {
+        popup.append(document.createElement('hr'));
+      }
 
-    popup.append(heading, price, link);
+      const heading = document.createElement('strong');
+      heading.textContent = property.title;
+
+      const price = document.createElement('p');
+      price.textContent =
+        property.price || 'Price on enquiry';
+
+      const link = document.createElement('a');
+      link.href = property.url;
+      link.target = '_blank';
+      link.rel = 'noopener noreferrer';
+      link.textContent = 'View property listing';
+
+      popup.append(heading, price, link);
+    });
 
     L.circleMarker([pos.lat, pos.lon], {
-      radius: 10,
+      radius: properties.length > 1 ? 13 : 10,
       color: '#ffffff',
       weight: 3,
       fillColor: '#1976d2',
       fillOpacity: 1
-    }).addTo(rentalLayer).bindPopup(popup);
+    }).addTo(rentalLayer)
+      .bindPopup(popup, {maxHeight: 240});
   });
+
+
 
   rentalMap.fitBounds(bounds.pad(0.15), {
     maxZoom: 15,
