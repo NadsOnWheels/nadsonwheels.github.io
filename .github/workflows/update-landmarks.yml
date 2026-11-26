@@ -1,0 +1,36 @@
+
+name: Refresh school and station landmarks
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '30 5 * * 0'
+
+permissions:
+  contents: write
+
+jobs:
+  update-landmarks:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Collect landmarks
+        run: python scripts/update_landmarks.py
+
+      - name: Save landmark data
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add landmarks.json
+          if ! git diff --cached --quiet; then
+            git commit -m "Refresh school and station landmarks"
+            git push
+          fi
