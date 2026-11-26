@@ -325,4 +325,31 @@ async function loadDefaultLandmarks() {
       'unavailable. Property markers remain visible.';
   }
 }
-loadRentals();
+
+let rentalStarted = false;
+
+function initialiseVisibleRentalMap() {
+  const container = $r('rentalMap');
+
+  if (!container || !container.clientWidth ||
+      !container.clientHeight) return;
+
+  if (!rentalStarted) {
+    rentalStarted = true;
+    loadRentals();
+  } else if (rentalMap) {
+    rentalMap.invalidateSize();
+  }
+}
+
+const rentalObserver = new ResizeObserver(
+  initialiseVisibleRentalMap
+);
+
+rentalObserver.observe($r('rentalMap'));
+
+window.addEventListener('hashchange', () => {
+  setTimeout(initialiseVisibleRentalMap, 150);
+});
+
+initialiseVisibleRentalMap();
