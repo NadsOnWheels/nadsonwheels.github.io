@@ -198,7 +198,7 @@ async function showAllRentals() {
   
 
   const bounds = L.latLngBounds([]);
-
+  const groups = [];
   located.forEach(({property, pos}) => {
     bounds.extend([pos.lat, pos.lon]);
 
