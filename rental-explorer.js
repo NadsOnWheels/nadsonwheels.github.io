@@ -23,7 +23,8 @@ async function loadRentals() {
 }
 if(rentals.length) await showAllRentals();
   } catch(e) {
-    $r('rentalStatus').textContent='Rental listings are currently unavailable.';
+    $r('rentalStatus').textContent =
+  'Rental explorer error: ' + e.message;
     $r('rentalSelect').innerHTML='<option value="">No data available</option>';
   }
 }
