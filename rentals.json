@@ -1,5 +1,5 @@
 {
-  "updated": "2026-11-26 19:58 UTC",
+  "updated": "2026-11-27 08:26 UTC",
   "notice": "Public listings; confirm availability with Land Estates",
   "properties": [
     {
@@ -81,6 +81,14 @@
       "location": "Flat K Moatfield House,Highfield Road,Dartford, Kent, UK",
       "lat": 51.440811,
       "lon": 0.212602
+    },
+    {
+      "title": "Fulwich Road, Dartford",
+      "price": "£900 pcm",
+      "url": "https://www.landestate.co.uk/property-to-rent/dartford/fulwich-road-dartford/",
+      "location": "Fulwich Road, Dartford, Kent, UK",
+      "lat": 51.446842,
+      "lon": 0.223227
     },
     {
       "title": "Gladstone Road,Dartford",
