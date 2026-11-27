@@ -1,5 +1,5 @@
 {
-  "updated": "2026-11-27 08:26 UTC",
+  "updated": "2026-11-27 19:53 UTC",
   "notice": "Public listings; confirm availability with Land Estates",
   "properties": [
     {
@@ -164,7 +164,7 @@
     },
     {
       "title": "St Albans Road,Room 4,Dartford",
-      "price": "£725 pcm",
+      "price": "£700 pcm",
       "url": "https://www.landestate.co.uk/property-to-rent/dartford/st-albans-roadroom-4dartford/",
       "location": "St Albans Road,Room 4,Dartford, Kent, UK",
       "lat": 51.446384,
@@ -189,26 +189,10 @@
     {
       "title": "Waid Close, Dartford",
       "price": "£900 pcm",
-      "url": "https://www.landestate.co.uk/property-to-rent/dartford/waid-close-dartford-2/",
-      "location": "Waid Close, Dartford, Kent, UK",
-      "lat": 51.444057,
-      "lon": 0.226126
-    },
-    {
-      "title": "Waid Close, Dartford",
-      "price": "£900 pcm",
       "url": "https://www.landestate.co.uk/property-to-rent/dartford/waid-close-dartford-3/",
       "location": "Waid Close, Dartford, Kent, UK",
       "lat": 51.444061,
       "lon": 0.22608
-    },
-    {
-      "title": "Waid Close, Dartford",
-      "price": "£900 pcm",
-      "url": "https://www.landestate.co.uk/property-to-rent/dartford/waid-close-dartford/",
-      "location": "Waid Close, Dartford, Kent, UK",
-      "lat": 51.444286,
-      "lon": 0.226305
     },
     {
       "title": "Wyatt Road,Dartford",
